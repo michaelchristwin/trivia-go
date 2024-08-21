@@ -7,15 +7,21 @@ import (
 
 	"github.com/michaelchristwin/trivia-go/db"
 	"github.com/michaelchristwin/trivia-go/handlers"
+	"github.com/michaelchristwin/trivia-go/middleware"
 )
 
 func main() {
 	fmt.Println("This is Go baby")
-	db.ConnectDB()
-	http.HandleFunc("/", handlers.HomeHandler)
-	http.HandleFunc("/login", handlers.LoginHandler)
-	http.ListenAndServe(":8080", nil)
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := db.ConnectDB(); err != nil {
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	mux := http.NewServeMux()
+	mux.Handle("/", http.HandlerFunc(handlers.HomeHandler))
+	mux.Handle("/login", http.HandlerFunc(handlers.LoginHandler))
+	mux.Handle("/signin", http.HandlerFunc(handlers.AddUser))
+	wrappedMux := middleware.CORSmiddleware(mux)
+	fmt.Println("Server running on http://localhost:8080")
+	if err := http.ListenAndServe(":8080", wrappedMux); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

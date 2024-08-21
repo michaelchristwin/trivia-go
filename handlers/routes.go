@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type LoginRequest struct {
+type UserFactory struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -32,6 +32,17 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session_id")
+	if err == nil {
+		// Cookie exists, validate session
+		sessionID := cookie.Value
+		userID, sessionExists := sessionStore[sessionID]
+		if sessionExists {
+			// Session is valid, user is already logged in
+			fmt.Fprintf(w, "Welcome back, User %s!", userID)
+			return
+		}
+	}
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -44,7 +55,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var loginReq LoginRequest
+	var loginReq UserFactory
 	if err := json.Unmarshal(body, &loginReq); err != nil {
 		http.Error(w, "Error parsing request body", http.StatusBadRequest)
 		return
@@ -87,4 +98,36 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Login successful"))
+}
+
+func AddUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+	var siginReq UserFactory
+	if err := json.Unmarshal(body, &siginReq); err != nil {
+		http.Error(w, "Error parsing request body", http.StatusBadRequest)
+		return
+	}
+	hashedPassword, err := utils.HashPassword(siginReq.Password)
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		return
+	}
+	document := bson.D{{Key: "email", Value: siginReq.Email}, {Key: "password", Value: hashedPassword}}
+	collection := db.MongoClient.Database("users").Collection("users")
+	result, err := collection.InsertOne(context.TODO(), document)
+	if err != nil {
+		http.Error(w, "Error inserting document", http.StatusInternalServerError)
+	}
+	fmt.Printf("Inserted document with ID: %v\n", result.InsertedID)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("User added successfully"))
 }

@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -14,26 +13,27 @@ import (
 
 var MongoClient *mongo.Client
 
-func ConnectDB() {
+func ConnectDB() error {
 	err := godotenv.Load(".env.local")
 	if err != nil {
-		log.Fatalf("Error loading .env.local file")
+		return fmt.Errorf("error loading .env.local file: %w", err)
 	}
+
 	MONGO_PASSWORD := os.Getenv("ACCOUNT_PASSWORD")
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	uri := fmt.Sprintf("mongodb+srv://kelechukwuchristwin:%s@michael.fqimwas.mongodb.net/?retryWrites=true&w=majority&appName=michael", MONGO_PASSWORD)
 	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI)
-	MongoClient, err := mongo.Connect(context.TODO(), opts)
+	client, err := mongo.Connect(context.TODO(), opts)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("error connecting to MongoDB: %w", err)
 	}
-	defer func() {
-		if err = MongoClient.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
-	if err := MongoClient.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "Ping", Value: 1}}).Err(); err != nil {
-		panic(err)
+
+	// Verify connection
+	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "Ping", Value: 1}}).Err(); err != nil {
+		return fmt.Errorf("error verifying MongoDB connection: %w", err)
 	}
+
+	MongoClient = client
 	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
+	return nil
 }
