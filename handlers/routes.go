@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/michaelchristwin/trivia-go/db"
 	"github.com/michaelchristwin/trivia-go/utils"
@@ -50,14 +51,15 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
+	time.Sleep(time.Millisecond * 300)
 
 	var loginReq UserFactory
 	if err := json.Unmarshal(body, &loginReq); err != nil {
-		http.Error(w, "Error parsing request body", http.StatusBadRequest)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
@@ -67,22 +69,22 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	err = collection.FindOne(context.TODO(), filter).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			http.Error(w, "No document found", http.StatusNotFound)
+			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		} else {
 			log.Printf("Error finding document: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		}
 		return
 	}
 
 	if err := utils.CheckPasswordHash(loginReq.Password, result.Password); err != nil {
-		http.Error(w, "Invalid password", http.StatusUnauthorized)
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
 
 	sessionID, err := utils.GenerateSessionID()
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
 
@@ -107,25 +109,25 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 	var siginReq UserFactory
 	if err := json.Unmarshal(body, &siginReq); err != nil {
-		http.Error(w, "Error parsing request body", http.StatusBadRequest)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 	hashedPassword, err := utils.HashPassword(siginReq.Password)
 	if err != nil {
-		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	document := bson.D{{Key: "email", Value: siginReq.Email}, {Key: "password", Value: hashedPassword}}
 	collection := db.MongoClient.Database("users").Collection("users")
 	result, err := collection.InsertOne(context.TODO(), document)
 	if err != nil {
-		http.Error(w, "Error inserting document", http.StatusInternalServerError)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 	fmt.Printf("Inserted document with ID: %v\n", result.InsertedID)
 	w.WriteHeader(http.StatusOK)
