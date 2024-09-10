@@ -33,6 +33,11 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
 	cookie, err := r.Cookie("session_id")
 	if err == nil {
 		// Cookie exists, validate session
@@ -43,10 +48,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Welcome back, User %s!", userID)
 			return
 		}
-	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
 	}
 
 	body, err := io.ReadAll(r.Body)
@@ -96,10 +97,20 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false, // Set to true if using HTTPS
+		SameSite: http.SameSiteLaxMode,
 	})
-
+	response := map[string]string{
+		"message": "Login successful",
+		"email":   result.Email,
+	}
+	responseBody, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Login successful"))
+	w.Write(responseBody)
 }
 
 func AddUser(w http.ResponseWriter, r *http.Request) {
