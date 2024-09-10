@@ -18,7 +18,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handlers.HomeHandler))
 	mux.Handle("/login", http.HandlerFunc(handlers.LoginHandler))
-	mux.Handle("/signin", http.HandlerFunc(handlers.AddUser))
+	mux.Handle("/signup", http.HandlerFunc(handlers.AddUser))
 	wrappedMux := middleware.CORSmiddleware(mux)
 	fmt.Println("Server running on http://localhost:8080")
 	if err := http.ListenAndServe(":8080", wrappedMux); err != nil {
