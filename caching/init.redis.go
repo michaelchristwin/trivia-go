@@ -85,3 +85,26 @@ func getAndPopRandomQuestion(category string) (*Question, error) {
 
 	return &question, nil
 }
+
+func GetQuestion(category string) (*Question, error) {
+	// Try to get a random question
+	question, err := getAndPopRandomQuestion(category)
+	if err != nil {
+		if err.Error() == "no questions available" {
+			// No questions available, fetch and cache new questions
+			if err := fetchAndCacheQuestions(10, category); err != nil {
+				return nil, fmt.Errorf("error fetching and caching questions: %v", err)
+			}
+
+			// Try to get a question again after caching
+			question, err = getAndPopRandomQuestion(category)
+			if err != nil {
+				return nil, fmt.Errorf("error getting question after caching: %v", err)
+			}
+		} else {
+			return nil, fmt.Errorf("error getting question: %v", err)
+		}
+	}
+
+	return question, nil
+}
