@@ -12,6 +12,7 @@ import (
 
 func main() {
 	fmt.Println("This is Go baby")
+
 	if err := db.ConnectDB(); err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}

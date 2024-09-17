@@ -27,7 +27,7 @@ func fetchAndCacheQuestions(amount int, category string) error {
 	if err != nil {
 		return fmt.Errorf("error getting token: %v", err)
 	}
-	url := fmt.Sprintf("https://opentdb.com/api.php?amount=%d&category=%s&type=multiple&token=%s", amount, category, token)
+	url := fmt.Sprintf("https://opentdb.com/api.php?amount=%d&category=%s&&difficulty=easy&type=multiple&token=%s", amount, category, token)
 
 	// Fetch questions from API
 	resp, err := http.Get(url)
