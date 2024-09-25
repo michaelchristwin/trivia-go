@@ -16,14 +16,18 @@ import (
 )
 
 type UserFactory struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
 type User struct {
-	ID       string `bson:"_id"`
-	Email    string `bson:"email"`
-	Password string `bson:"password"`
+	ID        string `bson:"_id"`
+	FirstName string `bson:"first_name"`
+	LastName  string `bson:"last_name"`
+	Email     string `bson:"email"`
+	Password  string `bson:"password"`
 }
 
 var sessionStore = map[string]string{}
@@ -134,7 +138,7 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	document := bson.D{{Key: "email", Value: siginReq.Email}, {Key: "password", Value: hashedPassword}}
+	document := bson.D{{Key: "email", Value: siginReq.Email}, {Key: "password", Value: hashedPassword}, {Key: "first_name", Value: siginReq.FirstName}, {Key: "last_name", Value: siginReq.LastName}}
 	collection := db.MongoClient.Database("users").Collection("users")
 	result, err := collection.InsertOne(context.TODO(), document)
 	if err != nil {
