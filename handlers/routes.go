@@ -103,14 +103,20 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   false, // Set to true if using HTTPS
 		SameSite: http.SameSiteLaxMode,
 	})
-	jsonData, err := json.Marshal(result)
-	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+	data := struct {
+		ID        string
+		FirstName string
+		LastName  string
+		Email     string
+	}{
+		ID:        result.ID,
+		FirstName: result.FirstName,
+		LastName:  result.LastName,
+		Email:     result.Email,
 	}
-	response := map[string]string{
+	response := map[string]interface{}{
 		"message": "Login successful",
-		"data":    string(jsonData),
+		"data":    data, // Pass `data` as an object, not as a JSON string
 	}
 	responseBody, err := json.Marshal(response)
 	if err != nil {
