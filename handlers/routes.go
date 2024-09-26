@@ -16,16 +16,16 @@ import (
 )
 
 type UserFactory struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 }
 
 type User struct {
 	ID        string `bson:"_id"`
-	FirstName string `bson:"first_name"`
-	LastName  string `bson:"last_name"`
+	FirstName string `bson:"firstName"`
+	LastName  string `bson:"lastName"`
 	Email     string `bson:"email"`
 	Password  string `bson:"password"`
 }
@@ -103,9 +103,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   false, // Set to true if using HTTPS
 		SameSite: http.SameSiteLaxMode,
 	})
+	jsonData, err := json.Marshal(result)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 	response := map[string]string{
 		"message": "Login successful",
-		"email":   result.Email,
+		"data":    string(jsonData),
 	}
 	responseBody, err := json.Marshal(response)
 	if err != nil {
@@ -138,7 +143,7 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	document := bson.D{{Key: "email", Value: siginReq.Email}, {Key: "password", Value: hashedPassword}, {Key: "first_name", Value: siginReq.FirstName}, {Key: "last_name", Value: siginReq.LastName}}
+	document := bson.D{{Key: "email", Value: siginReq.Email}, {Key: "password", Value: hashedPassword}, {Key: "firstName", Value: siginReq.FirstName}, {Key: "lastName", Value: siginReq.LastName}}
 	collection := db.MongoClient.Database("users").Collection("users")
 	result, err := collection.InsertOne(context.TODO(), document)
 	if err != nil {
