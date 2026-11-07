@@ -1,2 +1,4 @@
 .env.local
 .env
+.env.development
+.env.production
