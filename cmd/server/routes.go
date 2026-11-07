@@ -25,10 +25,11 @@ func SetupRoutes() *chi.Mux {
 			return a
 		},
 	}))
-	router.Use(middleware.ClientIPFromRemoteAddr)
-	router.Use(middleware.RequestID)
-	router.Use(internal_middleware.Logger(logger))
-	router.Use(middleware.Recoverer)
+	router.Use(middleware.ClientIPFromRemoteAddr,
+		middleware.RequestID,
+		internal_middleware.Logger(logger),
+		middleware.Recoverer)
+
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
